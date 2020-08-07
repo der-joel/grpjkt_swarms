@@ -1,0 +1,68 @@
+TODO:
+
+Notes:
+- jeder agent bekommt kugelförmigen trigger collider zum bestimmen aller agent in reichweite
+	-> form kann angepasst werden, sollte die sensorik etwas anderes verlangen (z.b kegel zur simulation von augen, ohren, etc.)
+- movement sollte über rigidbody funktionieren
+	-> bug liegt auch an rigidbody
+- jede steering behaviour function sollte einen normalisierten vektor zurückgeben (die richtung in die es gehen will)
+	-> diese werden dann später mit faktoren verrechnet (so kann man die priorität der lenkungsverhalten bestimmen)
+	(-> das ergebnis wird wieder normalisiert)
+	-> das ergebnis wird dann an den rigidbody des objekts weitergegeben
+	-> dieser fügt dann eine kraft hinzu (und multipliziert die richtung vorher mit tempo, deltatime, etc.)
+- rigidbody fürs drehen verwenden (auch mit acceleration)
+- collider als vorauswahl
+
+
+
+Vorstellung des Projekts:
+
+Ziel:
+- Simulation eines Schwarms ohne mich auf eine spezifische Spezies festzulegen
+- allgemein gehalten so dass das verhalten jeder spezies durch anpassung der parameter simuliert werden kann 
+	-> oder ändern der agenten prefabs
+- keine gemeinsame speichernutzung zwischen den agenten (schwärme entstehen durch das aggregierte verhalten der einzelnen individuen)
+
+Aufbau der Agenten:
+jeder agent muss diese bausteine haben
+- skript mit der simulationslogik
+	-> einstellen der geschwindigkeit
+	-> faktoren für die einzelnen lenkungsverhalten
+- rigidbody zur physik-simulation
+- trigger collider zur "wahrnehmung der umgebung")
+	-> jedes andere objekt das innerhalb des colliders kommt wird von unserem agenten wahrgenommen
+	-> können auch mehrere sein
+	-> beliebige form
+	==> simulation sämtlicher wahrnehmungsorgane möglich
+
+Probleme die bisher Aufgetreten sind
+- Steuerung der agenten:
+	-> komplett über unitys physik-engine um so anpassbar wie möglich zu gestalten
+
+Video1:
+- 80 agenten werden in einem 50 einheiten großen würfel zufällig verteilt gespawnt
+- kombinieren der einzelnen verhaltensvektoren ohne einbeziehung der masse, etc. der agenten
+- direkte anpassung des geschwindigkeitvektors
+- craig reynolds ansatz
+
+Video2:
+- selbes szenario
+- beschleunigen der agent mit den errechneten vektoren unter einbeziehung der masse
+- problem: 
+
+Zeitplan:
+- bisher relativ genau im zeitplan
+- evtl. wird das aktuelle thema länger dauern als geplant
+	-> nicht schlimm dafür gibt es bugfix-phase
+- einarbeiten in unity hat wesentlich länger gedauert als gedacht
+- dafür war die kommunikation zwischen den aktoren schneller erledigt als gedacht
+==> prinzipiell dauerte das konzept immer länger als die implementierung,
+    da unity bereits komplexe bausteine für alles zur verfügung stellt
+
+
+TODO: 
+- eigene regeln (und anpassung der reynolds regeln)
+- viele anpassbare parameter pro agent
+- hindernisumgehung (Reza Olfati-Saber - Flocking for Multi-Agent Dynamic Systems: Algorithms and Theory)
+- noise (falls noch zeit ist)(Yanfei Liu, Kevin M. Passino - Stable Social Foraging Swarms in a Noisy Environment)
+- simulieren einer konkreten spezies (falls noch zeit ist)
