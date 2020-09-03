@@ -13,7 +13,9 @@ public class Agent : MonoBehaviour
 
     [Header("Behaviour")]
     public GameObject target;
-    [Header("Movement")]
+
+    [Header("Movement")] 
+    public float maxTurnSpeed;
     public float maxVelocity;
     public float minVelocity;
     public float maxRotation;
@@ -51,8 +53,8 @@ public class Agent : MonoBehaviour
     // "Seek" Steering Behaviour
     private Vector3 Seek(Transform target)
     {
-        //return Vector3.Normalize(target.position - transform.position) - _velocity;
-        return target.position - transform.position - _rigidbody.velocity;
+        // return Vector3.Normalize(target.position - transform.position) - _rigidbody.velocity;
+        return target.position - transform.position;
     }
     
     // "Arrival" Steering Behaviour
@@ -72,9 +74,9 @@ public class Agent : MonoBehaviour
     {
         // calculate the average position of all nearby agents and return a vector pointing there
         return _neighbors.Count > 0 ? new Vector3(
-                                          _neighbors.Average(o => o.transform.position.x),
-                                          _neighbors.Average(o => o.transform.position.y),
-                                          _neighbors.Average(o => o.transform.position.z)) - transform.position : Vector3.zero;
+            _neighbors.Average(o => o.transform.position.x),
+            _neighbors.Average(o => o.transform.position.y),
+            _neighbors.Average(o => o.transform.position.z)) - transform.position : Vector3.zero;
     }
     
     // "Separation" Steering Behaviour
@@ -106,8 +108,8 @@ public class Agent : MonoBehaviour
             _neighbors.Average(o => o.GetVelocity().x),
             _neighbors.Average(o => o.GetVelocity().y),
             _neighbors.Average(o => o.GetVelocity().z)) : Vector3.zero;
-        // return a normalized vector representing the target velocity (or zero if there are no neighbors
-        return _neighbors.Count == 0 ? neighborVelocity : Vector3.Normalize(neighborVelocity - _rigidbody.velocity);
+        // return a vector representing the target velocity (or zero if there are no neighbors
+        return _neighbors.Count == 0 ? neighborVelocity : neighborVelocity - _rigidbody.velocity;
     }
 
     // Start is called before the first frame update
@@ -129,7 +131,16 @@ public class Agent : MonoBehaviour
         //_rigidbody.AddForce(CalculateMovement());
         //_rigidbody.MovePosition(transform.position + CalculateMovement() * Time.deltaTime);
         //_rigidbody.velocity = CalculateMovement();
-        _rigidbody.AddForce(CalculateMovement(), ForceMode.VelocityChange);
+        
+        //_rigidbody.AddForce(CalculateMovement(), ForceMode.Acceleration);
+        //CalculateLookDirection();
+        
+        _rigidbody.velocity += CalculateMovement() * Time.deltaTime;
+
+        if (_rigidbody.velocity.magnitude > maxVelocity)
+        {
+            _rigidbody.velocity = _rigidbody.velocity.normalized * maxVelocity;
+        }
     }
 
     // Calculates a movement vector for this agent
@@ -147,5 +158,20 @@ public class Agent : MonoBehaviour
         // TODO: do properly
         // velocity = Vector3.RotateTowards(velocity, velocity, maxRotation * Mathf.Deg2Rad, maxVelocity);
         return velocity;
+    }
+    
+    public void CalculateLookDirection()
+    {
+        // calculate look direction
+        var direction = Vector3.Normalize(_rigidbody.velocity);
+
+        // If we have a non-zero direction then look towards that direciton otherwise do nothing
+        if (direction.sqrMagnitude > 0.001f)
+        {
+            /* Mulitply by -1 because counter clockwise on the y-axis is in the negative direction */
+            float toRotation = -1 * (Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg);
+            float rotation = Mathf.LerpAngle(_rigidbody.rotation.eulerAngles.y, toRotation, Time.deltaTime * maxTurnSpeed);
+            _rigidbody.rotation = Quaternion.Euler(0, rotation, 0);
+        }
     }
 }
