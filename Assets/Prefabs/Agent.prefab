@@ -13,11 +13,12 @@ GameObject:
   - component: {fileID: 2262952403382029563}
   - component: {fileID: 1465853171849349671}
   - component: {fileID: 2542312082844504024}
+  - component: {fileID: 1068821943891213698}
   - component: {fileID: 3805911001218097067}
   - component: {fileID: 5556412912461143565}
   m_Layer: 0
   m_Name: Agent
-  m_TagString: Agent
+  m_TagString: swarm_agent
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -30,7 +31,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 344821868516956540}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0.02}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 4809484410386706529}
@@ -112,6 +113,28 @@ SphereCollider:
   serializedVersion: 2
   m_Radius: 10
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1068821943891213698
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 344821868516956540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99c807b9639643a7bafd7b1b950e7489, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxSeekVelocity: 3.5
+  maxArrivalVelocity: 3.5
+  arrivalSlowingDistance: 20
+  maxCohesionVelocity: 3.5
+  maxSeparationVelocity: 3.5
+  maxAlignmentVelocity: 3.5
+  maxWanderJitter: 20
+  maxFleeDistance: 20
+  maxFleeVelocity: 20
+  maxObstacleAvoidanceVelocity: 3.5
 --- !u!114 &3805911001218097067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -125,13 +148,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 6213915743399448543, guid: 59ca8bd1ef3244b41b9f46ca432dd722, type: 3}
-  maxVelocity: 60
-  minVelocity: 8
+  maxTurnSpeed: 0
+  maxVelocity: 5
+  minVelocity: 0
   maxRotation: 90
-  cohesionFactor: 1
-  alignmentFactor: 1
-  separationFactor: 1
-  arrivalSlowingDistance: 20
+  cohesionFactor: 0
+  alignmentFactor: 0
+  separationFactor: 0
+  arrivalFactor: 1
+  obstacleAvoidanceFactor: 2
 --- !u!54 &5556412912461143565
 Rigidbody:
   m_ObjectHideFlags: 0

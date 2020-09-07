@@ -1,15 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.Serialization;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 
+
 public class Agent : MonoBehaviour
 {
-    private List<Agent> _neighbors = new List<Agent>();
+    private List<Collider> _neighbors = new List<Collider>();
+    private List<Collider> _obstacles = new List<Collider>();
     private Rigidbody _rigidbody;
+    private SteeringBehaviours _steering;
+    private float _maxSensorRange = 0;
 
     [Header("Behaviour")]
     public GameObject target;
@@ -19,149 +24,85 @@ public class Agent : MonoBehaviour
     public float maxVelocity;
     public float minVelocity;
     public float maxRotation;
-    public float cohesionFactor;
-    public float alignmentFactor;
-    public float separationFactor;
-    [Header("Arrival")]
-    public float arrivalSlowingDistance;
+    public float cohesionFactor = 1.5f;
+    public float alignmentFactor = 1f;
+    public float separationFactor = 2f;
+    public float arrivalFactor = 3;
+    public float obstacleAvoidanceFactor = 5;
 
-    public Vector3 GetVelocity()
-    {
-        return _rigidbody.velocity;
-    }
-    
     // Process an object entering the trigger area
     private void OnTriggerEnter(Collider other)
     {
-        // try to get the agent script
-        var agent = other.gameObject.GetComponent<Agent>();
-        // if the other game object is an agent, add it to the neighbors list
-        if (agent) _neighbors.Add(agent);
-        // TODO: handle solid terrain getting in range
+        // if the other game object is a swarm agent, add it to the neighbors list
+        if (other.GetComponent<Agent>()) _neighbors.Add(other);
+        // if not add it to the obstacle list (if its not a children of a swarm agent)
+        else if (!other.GetComponentInParent<Agent>()) _obstacles.Add(other);
     }
 
     // Process an object leaving the trigger area
     private void OnTriggerExit(Collider other)
     {
-        // try to get the agent script
-        var agent = other.gameObject.GetComponent<Agent>();
-        // if the other game object is an agent, add it to the neighbors list
-        if (agent) _neighbors.Remove(agent);
-        // TODO: handle solid terrain leaving the range range
-    }
-
-    // "Seek" Steering Behaviour
-    private Vector3 Seek(Transform target)
-    {
-        // return Vector3.Normalize(target.position - transform.position) - _rigidbody.velocity;
-        return target.position - transform.position;
-    }
-    
-    // "Arrival" Steering Behaviour
-    private Vector3 Arrival(Transform target)
-    {
-        var targetPosition = target.position;
-        var ownPosition = transform.position;
-        // calculate target distance and desired velocity
-        var targetDistance = Vector3.Distance(targetPosition, ownPosition);
-        var desiredVelocity = maxVelocity * (targetDistance / arrivalSlowingDistance);
-        // calculate arrival velocity
-        return ((Mathf.Min(desiredVelocity, maxVelocity) / targetDistance) * (targetPosition - ownPosition)) - _rigidbody.velocity;
-    }
-
-    // "Cohesion" Steering Behaviour
-    private Vector3 Cohesion()
-    {
-        // calculate the average position of all nearby agents and return a vector pointing there
-        return _neighbors.Count > 0 ? new Vector3(
-            _neighbors.Average(o => o.transform.position.x),
-            _neighbors.Average(o => o.transform.position.y),
-            _neighbors.Average(o => o.transform.position.z)) - transform.position : Vector3.zero;
-    }
-    
-    // "Separation" Steering Behaviour
-    private Vector3 Separation()
-    {
-        var separationTarget = Vector3.zero;
-        var ownPosition = transform.position;
-        // sum up repulsive forces of all neighbors
-        for (int i = 0; i < _neighbors.Count; i++)
-        {
-            // calculate position of the neighbor
-            var neighborPosition = _neighbors[i].transform.position;
-            // calculate repulsive force of the neighbor
-            if (Vector3.Distance(ownPosition, neighborPosition) != 0.0f)
-            {
-                separationTarget += Vector3.Normalize(ownPosition - neighborPosition) /
-                                    Mathf.Pow(Vector3.Distance(ownPosition, neighborPosition), 2);
-            }
-        }
-        // return a vector pointing at the desired position
-        return separationTarget;
-    }
-    
-    // "Alignment" Steering Behaviour
-    private Vector3 Alignment()
-    {
-        // calculate average velocity of all neighbors (or zero if there are none)
-        var neighborVelocity = _neighbors.Count > 0 ? new Vector3(
-            _neighbors.Average(o => o.GetVelocity().x),
-            _neighbors.Average(o => o.GetVelocity().y),
-            _neighbors.Average(o => o.GetVelocity().z)) : Vector3.zero;
-        // return a vector representing the target velocity (or zero if there are no neighbors
-        return _neighbors.Count == 0 ? neighborVelocity : neighborVelocity - _rigidbody.velocity;
+        // if the other game object is a swarm agent, remove it from the neighbors list
+        if (other.GetComponent<Agent>()) _neighbors.Remove(other);
+        // if not remove it from the obstacle list (if its not a children of a swarm agent)
+        else if (!other.GetComponentInParent<Agent>()) _obstacles.Remove(other);
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        // set _rigidbody variable to the rigid body of the game object this is attached to
+        // set variables to the attached components
         _rigidbody = GetComponent<Rigidbody>();
-        // set riggidbody velocity to speed
-        // TODO
+        _steering = GetComponent<SteeringBehaviours>();
     }
 
-    // Update is called once per frame
+    // FixedUpdate is called every time the engine updates
     private void FixedUpdate()
     {
-        // log vectors
-        //Debug.Log(String.Format("[{0}] RB velocity: {1}, Arrival: {2}, Cohesion: {3}, Separation: {4}, Alignment: {5}",
-        //    gameObject.name, _rigidbody.velocity,  Arrival(target.transform), Cohesion(), Separation(), Alignment()));
-        // move
-        //_rigidbody.AddForce(CalculateMovement());
-        //_rigidbody.MovePosition(transform.position + CalculateMovement() * Time.deltaTime);
-        //_rigidbody.velocity = CalculateMovement();
+       
+        // calculate steering
+        var alignment = alignmentFactor * _steering.Alignment(_neighbors);
+        var cohesion = cohesionFactor * _steering.Cohesion(_neighbors);
+        var separation  = separationFactor * _steering.Separation(_neighbors);
+        var arrival = arrivalFactor * _steering.Arrival(target.transform.position);
+        var seek = arrivalFactor * _steering.Seek(target.transform.position);
+        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidanceOwn(_obstacles);
         
-        //_rigidbody.AddForce(CalculateMovement(), ForceMode.Acceleration);
-        //CalculateLookDirection();
+        // draw debug gizmos
+        var currentPosition = transform.position;
+        //if (alignment != Vector3.zero) Debug.DrawLine(currentPosition, alignment.normalized, Color.green);
+        //if (cohesion != Vector3.zero) Debug.DrawLine(currentPosition, cohesion.normalized, Color.blue);
+        //if (separation != Vector3.zero) Debug.DrawLine(currentPosition, separation.normalized, Color.black);
+        //if (seek != Vector3.zero) Debug.DrawLine(currentPosition, seek.normalized, Color.yellow);
+        //if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.red);
         
-        _rigidbody.velocity += CalculateMovement() * Time.deltaTime;
-
+        // calculate acceleration
+        // TODO: add wander, hide, seek, ...
+        Vector3 acceleration = alignment + cohesion + separation + seek + obstacleAvoidance;
+        // limit acceleration
+        if (acceleration.magnitude > maxVelocity) acceleration = acceleration.normalized * maxVelocity;
+        if (acceleration.magnitude < minVelocity) acceleration = acceleration.normalized * minVelocity;
+        
+        Debug.DrawLine(currentPosition, acceleration.normalized, Color.magenta);
+        
+        // TODO: how to apply acceleration to the rigidbody?
+        // accelerate agent
+        _rigidbody.velocity += acceleration * Time.deltaTime;
         if (_rigidbody.velocity.magnitude > maxVelocity)
         {
             _rigidbody.velocity = _rigidbody.velocity.normalized * maxVelocity;
         }
+        // _rigidbody.AddForce(acceleration, ForceMode.Force);
+        // _rigidbody.MovePosition(transform.position + acceleration * Time.deltaTime);
+        
+        // turn agent towards the move direction
+        _rigidbody.rotation = Quaternion.LookRotation(Vector3.Normalize(_rigidbody.velocity));
     }
 
-    // Calculates a movement vector for this agent
-    Vector3 CalculateMovement()
+    public void FaceTowardsMovement()
     {
-        // TODO: since every steering behaviour loops over all neighbors they should be combined to increase performance
-        // calculate velocity by combining the different steering behaviours
-        // TODO: do we need to consider current rigidbody velocity?
-        var velocity = Arrival(target.transform) + cohesionFactor * Cohesion() +  
-                       separationFactor * Separation() +  alignmentFactor* Alignment();
-        // limit velocity
-        if (velocity.magnitude > maxVelocity) velocity = velocity.normalized * maxVelocity;
-        if (velocity.magnitude < minVelocity) velocity = velocity.normalized * minVelocity;
-        // limit rotation
-        // TODO: do properly
-        // velocity = Vector3.RotateTowards(velocity, velocity, maxRotation * Mathf.Deg2Rad, maxVelocity);
-        return velocity;
-    }
-    
-    public void CalculateLookDirection()
-    {
+        // TODO: test if this is useful to turn towards current movement direction
+        
         // calculate look direction
         var direction = Vector3.Normalize(_rigidbody.velocity);
 
