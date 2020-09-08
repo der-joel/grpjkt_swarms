@@ -18,8 +18,8 @@ public class Target : MonoBehaviour
     void Update()
     {
         // movement
-        var move = transform.forward * Input.GetAxis("Vertical");
-        move += transform.right * Input.GetAxis("Horizontal");
-        _controller.Move(move * (speed * Time.deltaTime));
+        //var move = transform.forward * Input.GetAxis("Vertical");
+        //move += transform.right * Input.GetAxis("Horizontal");
+        //_controller.Move(move * (speed * Time.deltaTime));
     }
 }

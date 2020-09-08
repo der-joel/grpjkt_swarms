@@ -14,7 +14,6 @@ public class Agent : MonoBehaviour
     private List<Collider> _obstacles = new List<Collider>();
     private Rigidbody _rigidbody;
     private SteeringBehaviours _steering;
-    private float _maxSensorRange = 0;
 
     [Header("Behaviour")]
     public GameObject target;
@@ -59,7 +58,6 @@ public class Agent : MonoBehaviour
     // FixedUpdate is called every time the engine updates
     private void FixedUpdate()
     {
-       
         // calculate steering
         var alignment = alignmentFactor * _steering.Alignment(_neighbors);
         var cohesion = cohesionFactor * _steering.Cohesion(_neighbors);
@@ -74,7 +72,7 @@ public class Agent : MonoBehaviour
         //if (cohesion != Vector3.zero) Debug.DrawLine(currentPosition, cohesion.normalized, Color.blue);
         //if (separation != Vector3.zero) Debug.DrawLine(currentPosition, separation.normalized, Color.black);
         //if (seek != Vector3.zero) Debug.DrawLine(currentPosition, seek.normalized, Color.yellow);
-        //if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.red);
+        //if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.cyan);
         
         // calculate acceleration
         // TODO: add wander, hide, seek, ...
@@ -83,7 +81,7 @@ public class Agent : MonoBehaviour
         if (acceleration.magnitude > maxVelocity) acceleration = acceleration.normalized * maxVelocity;
         if (acceleration.magnitude < minVelocity) acceleration = acceleration.normalized * minVelocity;
         
-        Debug.DrawLine(currentPosition, acceleration.normalized, Color.magenta);
+        Debug.DrawLine(currentPosition, currentPosition + acceleration, Color.magenta);
         
         // TODO: how to apply acceleration to the rigidbody?
         // accelerate agent

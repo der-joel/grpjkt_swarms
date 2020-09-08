@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class SteeringBehaviours : MonoBehaviour
 {
@@ -28,6 +29,7 @@ public class SteeringBehaviours : MonoBehaviour
     public float maxFleeVelocity = 3.5f;
     [Header("Obstacle Avoidance")]
     public float maxObstacleAvoidanceVelocity = 3.5f;
+    public float distanceBetween;
     
     // Start is called before the first frame update
     void Start()
@@ -39,10 +41,13 @@ public class SteeringBehaviours : MonoBehaviour
         {
             if (collider.isTrigger)
             {
-                var colliderSize = collider.bounds.max.magnitude;
+                var colliderBounds = collider.bounds;
+                var colliderSize = Vector3.Magnitude(colliderBounds.max - colliderBounds.center);
                 if (_maxSensorRange < colliderSize) _maxSensorRange = colliderSize;
             }
         }
+
+        _maxSensorRange = 10;
     }
     
     // "Seek" Steering Behaviour
@@ -150,15 +155,39 @@ public class SteeringBehaviours : MonoBehaviour
         {
             // calculate vector pointing at the obstacle and obstacle position
             var obstaclePosition = obstacle.ClosestPoint(ownPosition);
-            Debug.DrawLine(ownPosition, obstaclePosition, Color.blue);
-            //return ownPosition - obstaclePosition;
+            var relativePosition = ownPosition - obstaclePosition;
+            var relativeVelocity = _rb.velocity;
+            if (obstacle.attachedRigidbody) relativeVelocity -= obstacle.attachedRigidbody.velocity;
+            var distance = relativePosition.magnitude;
+            var relativeSpeed = relativeVelocity.magnitude;
+
+            if (relativeSpeed == 0) continue;
+            var timeToCollision =
+                -1 * Vector3.Dot(relativePosition, relativeVelocity) / (relativeSpeed * relativeSpeed);
+            var separation = relativePosition + relativeVelocity * timeToCollision;
+            var minSeparation = separation.magnitude;
+
+
+            if (minSeparation >
+                distanceBetween - (ownPosition - _rb.ClosestPointOnBounds(obstaclePosition)).magnitude) continue;
+
+            if (minSeparation <= 0)
+            {
+                Debug.Log("colliding");
+                acceleration += ownPosition - obstaclePosition;
+            }
+            else acceleration += relativePosition + relativeVelocity * timeToCollision;
+        }
+        
+        /*
+         * old stuff
+         * //return ownPosition - obstaclePosition;
             var toObstacle = ownPosition - obstaclePosition;
             // if the angle between toObstacle and the current velocity is more than 90 degree ignore obstacle (its behind the agent)
             if (Vector3.Dot(_rb.velocity, toObstacle) <= 0)
             {
                 // calculate relative velocity and time until possible collision
-                var relativeVelocity = _rb.velocity;
-                if (obstacle.attachedRigidbody) relativeVelocity -= obstacle.attachedRigidbody.velocity;
+                
                 var collisionTime = Vector3.Dot(toObstacle, relativeVelocity) /
                                     relativeVelocity.magnitude * relativeVelocity.magnitude;
                 Debug.Log(collisionTime);
@@ -184,6 +213,8 @@ public class SteeringBehaviours : MonoBehaviour
             }
         }
         Debug.DrawLine(transform.position, acceleration, Color.red);
+         */
+
         return acceleration.normalized * maxObstacleAvoidanceVelocity;
     }
     
@@ -193,25 +224,25 @@ public class SteeringBehaviours : MonoBehaviour
         var ownPosition = transform.position;
         foreach (var obstacle in obstacles)
         {
-            
-            // calculate vector pointing at the obstacle and obstacle position
+            // calculate obstacle position (closest point on the surface) and vector pointing at the obstacle 
             var obstaclePosition = obstacle.ClosestPoint(ownPosition);
             var toObstacle = obstaclePosition - ownPosition;
+            // if the obstacle is in front of the agent
             if (Vector3.Dot(_rb.velocity, toObstacle) >= 0)
             {
-                // calculate force multiplier based on obstacle distance
-                var forceMultiplier = 2 - toObstacle.magnitude / _maxSensorRange;
-                
-                Debug.DrawLine(transform.position, transform.position + _rb.velocity, Color.blue);
-                Debug.DrawLine(transform.position, obstaclePosition, Color.red);
-                Debug.DrawLine(transform.position, transform.position + Vector3.Cross(toObstacle, _rb.velocity), Color.black);
+                // calculate force multiplier based on obstacle distance in relation to maximum trigger size
+                var forceMultiplier = maxObstacleAvoidanceVelocity * ((_maxSensorRange - toObstacle.magnitude) / _maxSensorRange);
 
-                var forceDir = Vector3.Cross(toObstacle, transform.position + Vector3.Cross(toObstacle, _rb.velocity));
-                Debug.DrawLine(transform.position, forceDir - transform.position, Color.yellow);
-                acceleration += forceMultiplier * forceDir;
+                // calculate auxiliary vector that is orthogonal to current velocity and vector pointing at the obstacle
+                var aux = Vector3.Cross(_rb.velocity, toObstacle);
+                
+                // calculate direction of the repulsive force for the given obstacle
+                var forceDirection = ownPosition + Vector3.Cross(toObstacle, aux);
+                
+                acceleration += forceDirection.normalized * forceMultiplier;
             }
         }
-        return acceleration.normalized * maxObstacleAvoidanceVelocity;
+        return acceleration;
     }
     
     // "Hide" Steering Behaviour

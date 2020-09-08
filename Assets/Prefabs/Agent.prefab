@@ -135,6 +135,7 @@ MonoBehaviour:
   maxFleeDistance: 20
   maxFleeVelocity: 20
   maxObstacleAvoidanceVelocity: 3.5
+  distanceBetween: 0
 --- !u!114 &3805911001218097067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152,11 +153,11 @@ MonoBehaviour:
   maxVelocity: 5
   minVelocity: 0
   maxRotation: 90
-  cohesionFactor: 0
-  alignmentFactor: 0
-  separationFactor: 0
+  cohesionFactor: 1
+  alignmentFactor: 1
+  separationFactor: 1
   arrivalFactor: 1
-  obstacleAvoidanceFactor: 2
+  obstacleAvoidanceFactor: 3
 --- !u!54 &5556412912461143565
 Rigidbody:
   m_ObjectHideFlags: 0
