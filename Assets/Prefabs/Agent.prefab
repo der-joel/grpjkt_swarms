@@ -125,19 +125,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99c807b9639643a7bafd7b1b950e7489, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSeekVelocity: 3.5
-  maxArrivalVelocity: 3.5
-  arrivalSlowingDistance: 20
-  maxCohesionVelocity: 3.5
-  maxSeparationVelocity: 3.5
-  maxAlignmentVelocity: 3.5
+  maxSeekVelocity: 5
+  maxArrivalVelocity: 5
+  arrivalSlowingDistance: 30
+  maxCohesionVelocity: 5
+  maxSeparationVelocity: 5
+  maxAlignmentVelocity: 5
   wanderJitter: 20
   wanderCircleRadius: 1.2
   wanderDistance: 2
-  maxWanderVelocity: 3.5
+  maxWanderVelocity: 5
   maxFleeDistance: 20
-  maxFleeVelocity: 20
-  maxObstacleAvoidanceVelocity: 5
+  maxFleeVelocity: 5
+  maxObstacleAvoidanceVelocity: 20
 --- !u!114 &3805911001218097067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152,15 +152,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 6213915743399448543, guid: 59ca8bd1ef3244b41b9f46ca432dd722, type: 3}
   maxTurnSpeed: 0
-  maxVelocity: 5
-  minVelocity: 0
+  maxVelocity: 10
+  minVelocity: 5
   maxRotation: 90
   cohesionFactor: 1
   alignmentFactor: 1
   separationFactor: 1
-  arrivalFactor: 0
-  obstacleAvoidanceFactor: 1
-  wanderFactor: 1
+  arrivalFactor: 1
+  obstacleAvoidanceFactor: 2
+  wanderFactor: 0.5
 --- !u!54 &5556412912461143565
 Rigidbody:
   m_ObjectHideFlags: 0
