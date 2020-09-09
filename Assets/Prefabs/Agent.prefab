@@ -131,11 +131,13 @@ MonoBehaviour:
   maxCohesionVelocity: 3.5
   maxSeparationVelocity: 3.5
   maxAlignmentVelocity: 3.5
-  maxWanderJitter: 20
+  wanderJitter: 20
+  wanderCircleRadius: 1.2
+  wanderDistance: 2
+  maxWanderVelocity: 3.5
   maxFleeDistance: 20
   maxFleeVelocity: 20
-  maxObstacleAvoidanceVelocity: 3.5
-  distanceBetween: 0
+  maxObstacleAvoidanceVelocity: 5
 --- !u!114 &3805911001218097067
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -156,8 +158,9 @@ MonoBehaviour:
   cohesionFactor: 1
   alignmentFactor: 1
   separationFactor: 1
-  arrivalFactor: 1
-  obstacleAvoidanceFactor: 3
+  arrivalFactor: 0
+  obstacleAvoidanceFactor: 1
+  wanderFactor: 1
 --- !u!54 &5556412912461143565
 Rigidbody:
   m_ObjectHideFlags: 0

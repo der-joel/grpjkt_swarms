@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 public class SteeringBehaviours : MonoBehaviour
 {
     private Rigidbody _rb;
     private float _maxSensorRange;
+    private Vector3 _wanderTarget;
     
     // TODO: default to "perfect" velocity
     [Header("Seek")]
@@ -23,19 +22,24 @@ public class SteeringBehaviours : MonoBehaviour
     // TODO: use or remove
     public float maxAlignmentVelocity = 3.5f;
     [Header("Wander")]
-    public float maxWanderJitter = 20;
+    public float wanderJitter = 20;
+    public float wanderCircleRadius = 1.2f;
+    public float wanderDistance = 2f;
+    public float maxWanderVelocity = 3.5f;
     [Header("Flee")]
     public float maxFleeDistance = 20;
     public float maxFleeVelocity = 3.5f;
     [Header("Obstacle Avoidance")]
     public float maxObstacleAvoidanceVelocity = 3.5f;
-    public float distanceBetween;
-    
+
     // Start is called before the first frame update
     void Start()
     {
         // set variables to the attached components
         _rb = GetComponent<Rigidbody>();
+        // initialize wander circle
+        var theta = Random.value * 2 * Mathf.PI;
+        _wanderTarget = new Vector3(wanderCircleRadius * Mathf.Cos(theta), 0f, wanderCircleRadius * Mathf.Sin(theta));
         // calculate maximum sensor range from the attached colliders (used for obstacle avoidance force)
         foreach (var collider in GetComponents<Collider>())
         {
@@ -46,7 +50,6 @@ public class SteeringBehaviours : MonoBehaviour
                 if (_maxSensorRange < colliderSize) _maxSensorRange = colliderSize;
             }
         }
-
         _maxSensorRange = 10;
     }
     
@@ -138,87 +141,9 @@ public class SteeringBehaviours : MonoBehaviour
         return Vector3.Normalize(ownPosition - targetPosition) * maxFleeVelocity;
         
     }
-    
-    // "Wander" Steering Behaviour
-    public Vector3 Wander()
-    {
-        // TODO: finish this behaviour
-        return Vector3.zero;
-    }
-    
+
     // "CollisionAvoidance" Steering Behaviour
     public Vector3 ObstacleAvoidance(IReadOnlyCollection<Collider> obstacles)
-    {
-        var acceleration = Vector3.zero;
-        var ownPosition = transform.position;
-        foreach (var obstacle in obstacles)
-        {
-            // calculate vector pointing at the obstacle and obstacle position
-            var obstaclePosition = obstacle.ClosestPoint(ownPosition);
-            var relativePosition = ownPosition - obstaclePosition;
-            var relativeVelocity = _rb.velocity;
-            if (obstacle.attachedRigidbody) relativeVelocity -= obstacle.attachedRigidbody.velocity;
-            var distance = relativePosition.magnitude;
-            var relativeSpeed = relativeVelocity.magnitude;
-
-            if (relativeSpeed == 0) continue;
-            var timeToCollision =
-                -1 * Vector3.Dot(relativePosition, relativeVelocity) / (relativeSpeed * relativeSpeed);
-            var separation = relativePosition + relativeVelocity * timeToCollision;
-            var minSeparation = separation.magnitude;
-
-
-            if (minSeparation >
-                distanceBetween - (ownPosition - _rb.ClosestPointOnBounds(obstaclePosition)).magnitude) continue;
-
-            if (minSeparation <= 0)
-            {
-                Debug.Log("colliding");
-                acceleration += ownPosition - obstaclePosition;
-            }
-            else acceleration += relativePosition + relativeVelocity * timeToCollision;
-        }
-        
-        /*
-         * old stuff
-         * //return ownPosition - obstaclePosition;
-            var toObstacle = ownPosition - obstaclePosition;
-            // if the angle between toObstacle and the current velocity is more than 90 degree ignore obstacle (its behind the agent)
-            if (Vector3.Dot(_rb.velocity, toObstacle) <= 0)
-            {
-                // calculate relative velocity and time until possible collision
-                
-                var collisionTime = Vector3.Dot(toObstacle, relativeVelocity) /
-                                    relativeVelocity.magnitude * relativeVelocity.magnitude;
-                Debug.Log(collisionTime);
-                if (collisionTime > 0)
-                {
-                    // check separation between agent and obstacle at the calculated collision time
-                    var separation = toObstacle + relativeVelocity * collisionTime;
-                    Debug.Log("Check1 complete " + separation);
-                    // check if they will collide
-                    if (separation.magnitude > (ownPosition - _rb.ClosestPointOnBounds(ownPosition)).magnitude)
-                    {
-                        // if collision will happen without separation or if collision is happening at the moment
-                        if (separation.magnitude <= 0 || toObstacle.magnitude <= 0)
-                        {
-                            // calculate acceleration based on the current position
-                            acceleration += ownPosition - obstaclePosition;
-                        }
-                        // else calculate acceleration based on the future position
-                        else acceleration += separation;
-                        Debug.Log("Check2 complete " + acceleration);
-                    }
-                }
-            }
-        }
-        Debug.DrawLine(transform.position, acceleration, Color.red);
-         */
-
-        return acceleration.normalized * maxObstacleAvoidanceVelocity;
-    }
-    
-    public Vector3 ObstacleAvoidanceOwn(IReadOnlyCollection<Collider> obstacles)
     {
         var acceleration = Vector3.zero;
         var ownPosition = transform.position;
@@ -227,6 +152,7 @@ public class SteeringBehaviours : MonoBehaviour
             // calculate obstacle position (closest point on the surface) and vector pointing at the obstacle 
             var obstaclePosition = obstacle.ClosestPoint(ownPosition);
             var toObstacle = obstaclePosition - ownPosition;
+            Debug.DrawLine(ownPosition, obstaclePosition, Color.red);
             // if the obstacle is in front of the agent
             if (Vector3.Dot(_rb.velocity, toObstacle) >= 0)
             {
@@ -240,9 +166,25 @@ public class SteeringBehaviours : MonoBehaviour
                 var forceDirection = ownPosition + Vector3.Cross(toObstacle, aux);
                 
                 acceleration += forceDirection.normalized * forceMultiplier;
+                Debug.DrawLine(ownPosition, ownPosition + (forceDirection.normalized * forceMultiplier), Color.blue);
             }
         }
         return acceleration;
+    }
+    
+    // "Wander" Steering Behaviour
+    public Vector3 Wander()
+    {
+        var ownPosition = transform.position;
+        // displace target a random amount using jitter
+        var jitter = wanderJitter * Time.deltaTime;
+        _wanderTarget += new Vector3(Random.Range(-1f, 1f) * jitter, 0f, Random.Range(-1f, 1f) * jitter);
+        // project target back onto circle
+        _wanderTarget.Normalize();
+        _wanderTarget *= wanderCircleRadius;
+        // calculate target for the agent and return vector pointing at it
+        var target = ownPosition + transform.forward * wanderDistance + _wanderTarget;;
+        return Vector3.Normalize(target - ownPosition) * maxWanderVelocity;
     }
     
     // "Hide" Steering Behaviour

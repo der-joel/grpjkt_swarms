@@ -28,6 +28,7 @@ public class Agent : MonoBehaviour
     public float separationFactor = 2f;
     public float arrivalFactor = 3;
     public float obstacleAvoidanceFactor = 5;
+    public float wanderFactor = 1;
 
     // Process an object entering the trigger area
     private void OnTriggerEnter(Collider other)
@@ -64,25 +65,35 @@ public class Agent : MonoBehaviour
         var separation  = separationFactor * _steering.Separation(_neighbors);
         var arrival = arrivalFactor * _steering.Arrival(target.transform.position);
         var seek = arrivalFactor * _steering.Seek(target.transform.position);
-        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidanceOwn(_obstacles);
-        
-        // draw debug gizmos
-        var currentPosition = transform.position;
-        //if (alignment != Vector3.zero) Debug.DrawLine(currentPosition, alignment.normalized, Color.green);
-        //if (cohesion != Vector3.zero) Debug.DrawLine(currentPosition, cohesion.normalized, Color.blue);
-        //if (separation != Vector3.zero) Debug.DrawLine(currentPosition, separation.normalized, Color.black);
-        //if (seek != Vector3.zero) Debug.DrawLine(currentPosition, seek.normalized, Color.yellow);
-        //if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.cyan);
-        
+        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidance(_obstacles);
+        var wander = wanderFactor * _steering.Wander();
+
         // calculate acceleration
-        // TODO: add wander, hide, seek, ...
-        Vector3 acceleration = alignment + cohesion + separation + seek + obstacleAvoidance;
+        Vector3 acceleration = alignment + cohesion + separation + obstacleAvoidance + wander;
         // limit acceleration
         if (acceleration.magnitude > maxVelocity) acceleration = acceleration.normalized * maxVelocity;
         if (acceleration.magnitude < minVelocity) acceleration = acceleration.normalized * minVelocity;
         
-        Debug.DrawLine(currentPosition, currentPosition + acceleration, Color.magenta);
+        // show debug information
+        var currentPosition = transform.position;
+        if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, currentPosition + obstacleAvoidance.normalized, Color.cyan);
+        if (wander != Vector3.zero) Debug.DrawLine(currentPosition, currentPosition + wander, Color.yellow);
         
+        if (false)
+        {
+            // draw debug gizmos
+            if (alignment != Vector3.zero) Debug.DrawLine(currentPosition, alignment.normalized, Color.green);
+            if (cohesion != Vector3.zero) Debug.DrawLine(currentPosition, cohesion.normalized, Color.blue);
+            if (separation != Vector3.zero) Debug.DrawLine(currentPosition, separation.normalized, Color.black);
+            //if (seek != Vector3.zero) Debug.DrawLine(currentPosition, seek.normalized, Color.yellow);
+            if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.cyan);
+            if (wander != Vector3.zero)Debug.DrawLine(currentPosition, currentPosition + wander, Color.yellow);
+            Debug.DrawLine(currentPosition, currentPosition + acceleration, Color.magenta);
+            // Log forces
+            Debug.Log(
+                $"Alignment: {alignment}\nCohesion: {cohesion}\nSeparation: {separation}\nobstacleAvoidance: {obstacleAvoidance}\nWander: {wander}");
+        }
+
         // TODO: how to apply acceleration to the rigidbody?
         // accelerate agent
         _rigidbody.velocity += acceleration * Time.deltaTime;
