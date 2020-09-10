@@ -4,13 +4,11 @@ using Random = UnityEngine.Random;
 
 public class Spawn : MonoBehaviour
 {
-    [Header("Spawn Properties")]
+    [Header("Spawn Position")]
     public Vector3 center;
     public Vector3 size;
-    [Header("Agent Properties")]
+    [Header("Spawn Properties")]
     public Transform agentPrefab;
-    public GameObject target;
-    [Header("Agent Spawn")]
     public float agentCount;
     
     // Start is called before the first frame update
@@ -29,7 +27,7 @@ public class Spawn : MonoBehaviour
             Random.Range(-size.y/2, size.y/2),
             Random.Range(-size.z/2, size.z/2)) + center;
         // instantiate agent
-        Instantiate(agentPrefab, position, Quaternion.identity).GetComponent<Agent>().target = target;
+        Instantiate(agentPrefab, position, Quaternion.identity);
     }
 
     // Draw the spawn area in cyan if the spawner is selected (using gizmos)

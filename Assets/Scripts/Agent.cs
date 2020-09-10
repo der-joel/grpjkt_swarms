@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using UnityEditor;
+﻿using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
 
@@ -15,45 +11,53 @@ public class Agent : MonoBehaviour
     private Rigidbody _rigidbody;
     private SteeringBehaviours _steering;
 
-    [Header("Behaviour Settings")]
+    [Header("Movement")]
+    public float maxAcceleration = 10;
+    public float minAcceleration = 0;
+    public float maxVelocity = 10;
     [Header("Ratio")]
     public float cohesionFactor = 1;
     public float alignmentFactor = 1;
     public float separationFactor = 1;
-    public float obstacleAvoidanceFactor = 2;
-    public float wanderFactor = 1;
+    public float obstacleAvoidanceFactor = 1;
+    public float wanderFactor = 0.5f;
     public float arrivalFactor = 0;
     public float seekFactor = 0;
     public float fleeFactor = 0;
+    public float hideFactor = 0;
     [Header("Seek")]
     public Transform seekTarget;
-    public float maxSeekVelocity = 3.5f;
+    public float maxSeekVelocity = 10;
     [Header("Arrival")]
     public Transform arrivalTarget;
-    public float maxArrivalVelocity = 3.5f;
-    public float arrivalSlowingDistance = 3.5f;
+    public float maxArrivalVelocity = 10;
+    public float arrivalSlowingDistance = 40;
     [Header("Cohesion")]
-    public float maxCohesionVelocity = 3.5f;
+    public float maxCohesionVelocity = 22;
     [Header("Separation")]
-    public float maxSeparationVelocity = 3.5f;
+    public float maxSeparationVelocity = 20;
     [Header("Alignment")]
-    public float maxAlignmentVelocity = 3.5f;
+    public float maxAlignmentVelocity = 20;
     [Header("Wander")]
     public float wanderJitter = 20;
     public float wanderCircleRadius = 1.2f;
     public float wanderDistance = 2f;
-    public float maxWanderVelocity = 3.5f;
+    public float maxWanderVelocity = 10;
     [Header("Flee")]
     public Transform fleeTarget;
     public float maxFleeDistance = 20;
-    public float maxFleeVelocity = 3.5f;
+    public float maxFleeVelocity = 20;
+    [Header("Hide")] 
+    public Transform hideTarget;
+    public float hideObstacleDistance = 10;
+    public float maxHideVelocity = 20;
     [Header("Obstacle Avoidance")]
-    public float maxObstacleAvoidanceVelocity = 3.5f;
+    public float maxObstacleAvoidanceVelocity = 25;
 
-    [Header("Movement")] 
-    public float maxTurnSpeed;
-    public float maxVelocity;
-    public float minVelocity;
+    private bool _isseekTargetNotNull;
+    private bool _isarrivalTargetNotNull;
+    private bool _isfleeTargetNotNull;
+    private bool _ishideTargetNotNull;
 
     // Process an object entering the trigger area
     private void OnTriggerEnter(Collider other)
@@ -76,12 +80,26 @@ public class Agent : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        _ishideTargetNotNull = hideTarget != null;
+        _isfleeTargetNotNull = fleeTarget != null;
+        _isarrivalTargetNotNull = arrivalTarget != null;
+        _isseekTargetNotNull = seekTarget != null;
         // set variables to the attached components
         _rigidbody = GetComponent<Rigidbody>();
-        // TODO: calculate max sensor range
-        var maxSensorRange = 10;
+        // calculate max sensor range (used for wall avoidance)
+        var maxSensorRange = 0f;
+        foreach (var sensor in GetComponents<Collider>())
+        {
+            // ignore non-trigger colliders
+            if (!sensor.isTrigger) continue;
+            // calculate max extend of bounds
+            var boundsExtend = sensor.bounds.extents;
+            var maxBoundsExtend = Mathf.Max(Mathf.Max(boundsExtend.x, boundsExtend.y), boundsExtend.z);
+            var sensorRange = Vector3.Distance(transform.position, sensor.transform.position) + maxBoundsExtend;
+            if (sensorRange > maxSensorRange) maxSensorRange = sensorRange;
+        }
         // create steering behaviour class
-        _steering = new SteeringBehaviours(_rigidbody,
+        _steering = new SteeringBehaviours(
             maxSensorRange,
             maxSeekVelocity,
             maxArrivalVelocity,
@@ -95,78 +113,89 @@ public class Agent : MonoBehaviour
             maxWanderVelocity,
             maxFleeDistance,
             maxFleeVelocity,
-            maxObstacleAvoidanceVelocity);
+            maxObstacleAvoidanceVelocity,
+            hideObstacleDistance,
+            maxHideVelocity);
+    }
+    
+    // Draw gizmos when this agent is selected in the scene view
+    private void OnDrawGizmosSelected()
+    {
+        if (_steering == null) return;
+        var currentPosition = transform.position;
+        // calculate steering
+        Vector3 seek = Vector3.zero, arrival = Vector3.zero, flee = Vector3.zero, hide = Vector3.zero;
+        var alignment = alignmentFactor * _steering.Alignment(_neighbors);
+        var cohesion = cohesionFactor * _steering.Cohesion(currentPosition, _neighbors);
+        var separation  = separationFactor * _steering.Separation(currentPosition, _neighbors);
+        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidance(currentPosition, _rigidbody.velocity, _obstacles);
+        var wander = wanderFactor * _steering.Wander(currentPosition, transform.forward);
+        if (_isarrivalTargetNotNull) arrival = arrivalFactor * _steering.Arrival(currentPosition, arrivalTarget.position);
+        if (_isseekTargetNotNull) seek = seekFactor * _steering.Seek(currentPosition, seekTarget.position);
+        if (_isfleeTargetNotNull) flee = fleeFactor * _steering.Flee(currentPosition, fleeTarget.position);
+        if (_ishideTargetNotNull) hide = hideFactor * _steering.Hide(currentPosition, hideTarget.position, _obstacles);
+        // calculate acceleration (combine steering behaviours and limit acceleration)
+        Vector3 acceleration = alignment + cohesion + separation + obstacleAvoidance + wander + arrival + seek + flee + hide;
+        if (acceleration.magnitude > maxAcceleration) acceleration = acceleration.normalized * maxAcceleration;
+        if (acceleration.magnitude < minAcceleration) acceleration = acceleration.normalized * minAcceleration;
+        // draw vector gizmos
+        Gizmos.color = Color.red;
+        Gizmos.DrawRay(currentPosition, cohesion);
+        Gizmos.color = Color.green;
+        Gizmos.DrawRay(currentPosition, separation);
+        Gizmos.color = Color.blue;
+        Gizmos.DrawRay(currentPosition, alignment);
+        Gizmos.color = Color.white;
+        Gizmos.DrawRay(currentPosition, obstacleAvoidance);
+        Gizmos.color = Color.grey;
+        Gizmos.DrawRay(currentPosition, flee);
+        Gizmos.color = Color.black;
+        Gizmos.DrawRay(currentPosition, hide);
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawRay(currentPosition, wander);
+        Gizmos.DrawRay(currentPosition, arrival);
+        Gizmos.DrawRay(currentPosition, seek);
+        Gizmos.color = Color.magenta;
+        Gizmos.DrawRay(currentPosition, acceleration);
+    }
+
+    private Vector3 GetSteering(Vector3 currentPosition)
+    {
+        // calculate steering
+        Vector3 seek = Vector3.zero, arrival = Vector3.zero, flee = Vector3.zero, hide = Vector3.zero;
+        var alignment = alignmentFactor * _steering.Alignment(_neighbors);
+        var cohesion = cohesionFactor * _steering.Cohesion(currentPosition, _neighbors);
+        var separation  = separationFactor * _steering.Separation(currentPosition, _neighbors);
+        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidance(currentPosition, _rigidbody.velocity, _obstacles);
+        var wander = wanderFactor * _steering.Wander(currentPosition, transform.forward);
+        if (_isarrivalTargetNotNull) arrival = arrivalFactor * _steering.Arrival(currentPosition, arrivalTarget.position);
+        if (_isseekTargetNotNull) seek = seekFactor * _steering.Seek(currentPosition, seekTarget.position);
+        if (_isfleeTargetNotNull) flee = fleeFactor * _steering.Flee(currentPosition, fleeTarget.position);
+        if (_ishideTargetNotNull) hide = hideFactor * _steering.Hide(currentPosition, hideTarget.position, _obstacles);
+
+        // calculate acceleration (combine steering behaviours)
+        var acceleration = alignment + cohesion + separation + obstacleAvoidance + wander + arrival + seek + flee + hide;
+        
+        // limit acceleration
+        if (acceleration.magnitude > maxAcceleration) acceleration = acceleration.normalized * maxAcceleration;
+        if (acceleration.magnitude < minAcceleration) acceleration = acceleration.normalized * minAcceleration;
+
+        return acceleration;
     }
 
     // FixedUpdate is called every time the physics engine updates
     private void FixedUpdate()
     {
-        var currentPosition = transform.position;
-        
-        // calculate steering
-        var alignment = alignmentFactor * _steering.Alignment(_neighbors);
-        var cohesion = cohesionFactor * _steering.Cohesion(currentPosition, _neighbors);
-        var separation  = separationFactor * _steering.Separation(currentPosition, _neighbors);
-        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidance(currentPosition, _obstacles);
-        var wander = wanderFactor * _steering.Wander(currentPosition, transform.forward);
-        var arrival = arrivalFactor * _steering.Arrival(currentPosition, arrivalTarget.position);
-        var seek = seekFactor * _steering.Seek(currentPosition, seekTarget.position);
-        var flee = fleeFactor * _steering.Flee(currentPosition, fleeTarget.position);
-
-        // calculate acceleration (combine steering behaviours)
-        Vector3 acceleration = alignment + cohesion + separation + obstacleAvoidance + wander + arrival + seek + flee;
-        
-        // limit acceleration
-        if (acceleration.magnitude > maxVelocity) acceleration = acceleration.normalized * maxVelocity;
-        if (acceleration.magnitude < minVelocity) acceleration = acceleration.normalized * minVelocity;
-        
-        // show debug information
-        //if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, currentPosition + obstacleAvoidance, Color.blue);
-        //if (wander != Vector3.zero) Debug.DrawLine(currentPosition, currentPosition + wander, Color.yellow);
-        
-        if (false)
-        {
-            // draw debug gizmos
-            if (alignment != Vector3.zero) Debug.DrawLine(currentPosition, alignment.normalized, Color.green);
-            if (cohesion != Vector3.zero) Debug.DrawLine(currentPosition, cohesion.normalized, Color.blue);
-            if (separation != Vector3.zero) Debug.DrawLine(currentPosition, separation.normalized, Color.black);
-            //if (seek != Vector3.zero) Debug.DrawLine(currentPosition, seek.normalized, Color.yellow);
-            if (obstacleAvoidance != Vector3.zero) Debug.DrawLine(currentPosition, obstacleAvoidance, Color.cyan);
-            if (wander != Vector3.zero)Debug.DrawLine(currentPosition, currentPosition + wander, Color.yellow);
-            Debug.DrawLine(currentPosition, currentPosition + acceleration, Color.magenta);
-            // Log forces
-            Debug.Log(
-                $"Alignment: {alignment}\nCohesion: {cohesion}\nSeparation: {separation}\nobstacleAvoidance: {obstacleAvoidance}\nWander: {wander}");
-        }
-
-        // TODO: how to apply acceleration to the rigidbody?
-        // accelerate agent
-        _rigidbody.velocity += acceleration * Time.deltaTime;
+        // calculate acceleration
+        var acceleration = GetSteering(transform.position);
+        // accelerate rigidbody
+        _rigidbody.AddForce(acceleration, ForceMode.Acceleration);
+        // limit velocity
         if (_rigidbody.velocity.magnitude > maxVelocity)
         {
             _rigidbody.velocity = _rigidbody.velocity.normalized * maxVelocity;
         }
-        // _rigidbody.AddForce(acceleration, ForceMode.Force);
-        // _rigidbody.MovePosition(transform.position + acceleration * Time.deltaTime);
-        
         // turn agent towards the move direction
-        _rigidbody.rotation = Quaternion.LookRotation(Vector3.Normalize(_rigidbody.velocity));
-    }
-
-    public void FaceTowardsMovement()
-    {
-        // TODO: test if this is useful to turn towards current movement direction
-        
-        // calculate look direction
-        var direction = Vector3.Normalize(_rigidbody.velocity);
-
-        // If we have a non-zero direction then look towards that direciton otherwise do nothing
-        if (direction.sqrMagnitude > 0.001f)
-        {
-            /* Mulitply by -1 because counter clockwise on the y-axis is in the negative direction */
-            float toRotation = -1 * (Mathf.Atan2(direction.z, direction.x) * Mathf.Rad2Deg);
-            float rotation = Mathf.LerpAngle(_rigidbody.rotation.eulerAngles.y, toRotation, Time.deltaTime * maxTurnSpeed);
-            _rigidbody.rotation = Quaternion.Euler(0, rotation, 0);
-        }
+        if (_rigidbody.velocity != Vector3.zero) _rigidbody.rotation = Quaternion.LookRotation(Vector3.Normalize(_rigidbody.velocity));
     }
 }

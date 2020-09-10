@@ -45,7 +45,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   center: {x: 0, y: 20, z: -20}
   size: {x: 15, y: 15, z: 15}
-  agentPrefab: {fileID: 4766523119322792087, guid: ddf3b0c62ae8c404886ea5c1de7b591b,
-    type: 3}
-  target: {fileID: 6213915743399448543, guid: 59ca8bd1ef3244b41b9f46ca432dd722, type: 3}
-  agentCount: 20
+  agentPrefab: {fileID: 472372, guid: 604c6a2a7f9c3484a86af004a7dcaf6a, type: 3}
+  agentCount: 100
