@@ -1150,7 +1150,7 @@ GameObject:
   - component: {fileID: 416397639075311905}
   - component: {fileID: 8219505262558149075}
   m_Layer: 0
-  m_Name: SardineSkinWithController
+  m_Name: Sardine
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1219,8 +1219,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 38d4cd13d4176674da70182ce9e37fa9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  maxAcceleration: 10
+  minAcceleration: 0
   maxVelocity: 10
-  minVelocity: 0
   cohesionFactor: 1
   alignmentFactor: 1
   separationFactor: 1

@@ -10,6 +10,11 @@ public class Spawn : MonoBehaviour
     [Header("Spawn Properties")]
     public Transform agentPrefab;
     public float agentCount;
+    [Header("Swarm Targets")]
+    public Transform seekTarget;
+    public Transform arrivalTarget;
+    public Transform fleeTarget;
+    public Transform hideTarget;
     
     // Start is called before the first frame update
     void Start()
@@ -27,7 +32,12 @@ public class Spawn : MonoBehaviour
             Random.Range(-size.y/2, size.y/2),
             Random.Range(-size.z/2, size.z/2)) + center;
         // instantiate agent
-        Instantiate(agentPrefab, position, Quaternion.identity);
+        var agent = Instantiate(agentPrefab, position, Quaternion.identity).GetComponent<Agent>();
+        // set targets
+        agent.seekTarget = seekTarget;
+        agent.arrivalTarget = arrivalTarget;
+        agent.fleeTarget = fleeTarget;
+        agent.hideTarget = hideTarget;
     }
 
     // Draw the spawn area in cyan if the spawner is selected (using gizmos)
