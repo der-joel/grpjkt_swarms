@@ -13,7 +13,7 @@ This implementation supports the following steering patterns:
 - Cohesion
 - Separation
 - Alignment
-- Obstacle Avoidance
+- Obstacle Avoidance (using a different concept)
 - Hide
 - Flee
 
