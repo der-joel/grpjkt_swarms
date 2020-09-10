@@ -35,7 +35,7 @@ The only requirement is that the following components are attached to the parent
 You can customize the behaviour of any individual agent by adjusting values in the inpector.
 
 The **Ratio**-Tab lets you configure how the different steering behaviours are mixed to create the agents movement:
->Example: to only use one movement pattern, set all other factors to 0.
+>Example: for agents to only use the "Wander" movement pattern, set **wanderFactor** to 1 and all other factors to 0.
 
 For fine-tuning the different movement patterns can also be customized:
 >Example: use **Arrival Slowing Distance** to customize the distance to the target, at which the agent starts slowing down.
