@@ -92,6 +92,8 @@ GameObject:
   m_Component:
   - component: {fileID: 4231359046566954}
   - component: {fileID: 5003992635588454873}
+  - component: {fileID: 7577467384939954223}
+  - component: {fileID: 7239772876777697791}
   m_Layer: 0
   m_Name: Character
   m_TagString: Untagged
@@ -129,6 +131,35 @@ MonoBehaviour:
   speed: 10
   lookRotateSpeed: 90
   rollSpeed: 45
+--- !u!135 &7577467384939954223
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1542895290467824}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 3
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &7239772876777697791
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1542895290467824}
+  serializedVersion: 2
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &245533811518946841
 GameObject:
   m_ObjectHideFlags: 0

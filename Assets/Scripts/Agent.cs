@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Quaternion = UnityEngine.Quaternion;
 using Vector3 = UnityEngine.Vector3;
@@ -163,15 +164,15 @@ public class Agent : MonoBehaviour
     {
         // calculate steering
         Vector3 seek = Vector3.zero, arrival = Vector3.zero, flee = Vector3.zero, hide = Vector3.zero;
-        var alignment = alignmentFactor * _steering.Alignment(_neighbors);
-        var cohesion = cohesionFactor * _steering.Cohesion(currentPosition, _neighbors);
-        var separation  = separationFactor * _steering.Separation(currentPosition, _neighbors);
-        var obstacleAvoidance = obstacleAvoidanceFactor * _steering.ObstacleAvoidance(currentPosition, _rigidbody.velocity, _obstacles);
-        var wander = wanderFactor * _steering.Wander(currentPosition, transform.forward);
-        if (_isarrivalTargetNotNull) arrival = arrivalFactor * _steering.Arrival(currentPosition, arrivalTarget.position);
-        if (_isseekTargetNotNull) seek = seekFactor * _steering.Seek(currentPosition, seekTarget.position);
-        if (_isfleeTargetNotNull) flee = fleeFactor * _steering.Flee(currentPosition, fleeTarget.position);
-        if (_ishideTargetNotNull) hide = hideFactor * _steering.Hide(currentPosition, hideTarget.position, _obstacles);
+        var alignment = (alignmentFactor != 0f) ? alignmentFactor * _steering.Alignment(_neighbors) : Vector3.zero;
+        var cohesion = (cohesionFactor != 0f) ? cohesionFactor * _steering.Cohesion(currentPosition, _neighbors) : Vector3.zero;
+        var separation  = (separationFactor != 0f) ?separationFactor * _steering.Separation(currentPosition, _neighbors) : Vector3.zero;
+        var obstacleAvoidance = (obstacleAvoidanceFactor != 0f) ? obstacleAvoidanceFactor * _steering.ObstacleAvoidance(currentPosition, _rigidbody.velocity, _obstacles) : Vector3.zero;
+        var wander = (wanderFactor != 0f) ? wanderFactor * _steering.Wander(currentPosition, transform.forward) : Vector3.zero;
+        if (_isarrivalTargetNotNull && arrivalFactor != 0f) arrival = arrivalFactor * _steering.Arrival(currentPosition, arrivalTarget.position);
+        if (_isseekTargetNotNull && seekFactor != 0f) seek = seekFactor * _steering.Seek(currentPosition, seekTarget.position);
+        if (_isfleeTargetNotNull && fleeFactor != 0f) flee = fleeFactor * _steering.Flee(currentPosition, fleeTarget.position);
+        if (_ishideTargetNotNull && hideFactor != 0f) hide = hideFactor * _steering.Hide(currentPosition, hideTarget.position, _obstacles);
 
         // calculate acceleration (combine steering behaviours)
         var acceleration = alignment + cohesion + separation + obstacleAvoidance + wander + arrival + seek + flee + hide;

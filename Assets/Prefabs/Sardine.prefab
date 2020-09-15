@@ -1147,8 +1147,8 @@ GameObject:
   - component: {fileID: 472372}
   - component: {fileID: 9502070}
   - component: {fileID: 5487756}
-  - component: {fileID: 416397639075311905}
   - component: {fileID: 8219505262558149075}
+  - component: {fileID: -4969903357667864157}
   m_Layer: 0
   m_Name: Sardine
   m_TagString: Untagged
@@ -1207,7 +1207,20 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 64
   m_CollisionDetection: 0
---- !u!114 &416397639075311905
+--- !u!135 &8219505262558149075
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162542}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 1
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 10
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-4969903357667864157
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1234,8 +1247,8 @@ MonoBehaviour:
   seekTarget: {fileID: 0}
   maxSeekVelocity: 10
   arrivalTarget: {fileID: 0}
-  maxArrivalVelocity: 10
-  arrivalSlowingDistance: 40
+  maxArrivalVelocity: 20
+  arrivalSlowingDistance: 35
   maxCohesionVelocity: 22
   maxSeparationVelocity: 20
   maxAlignmentVelocity: 20
@@ -1250,19 +1263,6 @@ MonoBehaviour:
   hideObstacleDistance: 10
   maxHideVelocity: 20
   maxObstacleAvoidanceVelocity: 25
---- !u!135 &8219505262558149075
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 162542}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 1
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 10
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &166694
 GameObject:
   m_ObjectHideFlags: 0

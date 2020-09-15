@@ -190,13 +190,16 @@ public class SteeringBehaviours
         // calculate point behind obstacle
         var obstaclePosition = closestObstacle.ClosestPoint(targetPosition);
         var toTarget = targetPosition - obstaclePosition;
+        if (toTarget == Vector3.zero) return Vector3.zero;
+        var toTargetDistance = toTarget.magnitude;
+        toTarget.Normalize();
         var behindObstacle = obstaclePosition - 2 * closestObstacle.bounds.max.magnitude * toTarget;
         // cast ray from behind the obstacle to get optimal hiding spot
         RaycastHit hit;
         if (closestObstacle.Raycast(new Ray(behindObstacle, toTarget), out hit,
-            2 * closestObstacle.bounds.max.magnitude * toTarget.magnitude))
+            2 * closestObstacle.bounds.max.magnitude * toTargetDistance))
         {
-            var hidingSpot = hit.point - toTarget.normalized * hideObstacleDistance;
+            var hidingSpot = hit.point - toTarget * hideObstacleDistance;
             return Vector3.Normalize(hidingSpot - ownPosition) * maxHideVelocity;
         }
         // if the ray hit nothing return zero
