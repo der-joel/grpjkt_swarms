@@ -40,6 +40,9 @@ The **Ratio**-Tab lets you configure how the different steering behaviours are m
 For fine-tuning the different movement patterns can also be customized:
 >Example: use **Arrival Slowing Distance** to customize the distance to the target, at which the agent starts slowing down.
 
+## Demo-Video
+[Click here](https://www.youtube.com/watch?v=Ts-D1KVIruv) to watch a demo video.
+
 ## Used Packages and Sources
 - [Stylised Submarine](https://assetstore.unity.com/packages/3d/vehicles/stylized-submarine-143306) (only character and animations were used) 
 - [Sardine](https://assetstore.unity.com/packages/3d/characters/animals/fish/sardine-37963) (only character and animations were used) 
