@@ -1,4 +1,4 @@
-# 3D Unity Swarm Simultion
+# 3D Unity Swarm Simulation
 A swarm simulation algorithm for Unity Engine.
 Based on Craig Reynolds [boids-Algorithm](https://www.red3d.com/cwr/boids/).
 
